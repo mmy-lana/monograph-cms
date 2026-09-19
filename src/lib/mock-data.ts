@@ -372,7 +372,7 @@ func (l *Limiter) Release() {
     subtitle: 'Why the web abandoned measure, rhythm and optical correction, and how to rebuild them with modern CSS.',
     status: 'published',
     coverImage: {
-      url: 'https://images.unsplash.com/photo-1507842229451-797185e8282e?auto=format&fit=crop&w=1600&q=80',
+      url: 'https://images.unsplash.com/photo-1461360370896-922624d12aa1?auto=format&fit=crop&w=1600&q=80',
       alt: 'Wooden letterpress drawers filled with metal movable type sorts',
       caption: 'Mechanical type imposed hard constraints on spacing, and those constraints produced better reading than most fluid layouts do today.'
     },
