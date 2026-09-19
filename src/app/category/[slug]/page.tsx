@@ -13,9 +13,16 @@ const CATEGORY_FEED_LIMIT = 50;
 /**
  * Known categories are prerendered and revalidated on the same 60 second window
  * as the article routes. `dynamicParams = true` allows a category created in the
- * CMS after the last build to render on demand rather than 404ing until CI runs,
- * and `generateMetadata` marks unknown categories `noindex` because Next renders
- * the not-found page for them on demand with a 200 status.
+ * CMS after the last build to render on demand rather than 404ing until CI runs.
+ *
+ * An unknown category returns HTTP 404, measured on the production build, since
+ * this segment declares no `loading.tsx` and therefore streams nothing before
+ * `notFound()` resolves. The response carries a `noindex` robots directive, so
+ * the not-found page stays out of search results regardless of the header.
+ *
+ * Note the asymmetry with `posts/[slug]`: that segment DOES declare a
+ * `loading.tsx`, and the Suspense boundary makes its unknown-slug response
+ * answer 200. See the comment in that file before assuming the two behave alike.
  */
 export const dynamicParams = true;
 export const revalidate = 60;

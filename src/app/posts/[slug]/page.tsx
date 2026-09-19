@@ -19,9 +19,18 @@ interface PageProps {
  * Prerendered slugs are served from the cache and refreshed every 60 seconds,
  * while `dynamicParams = true` lets an article published in the CMS after the
  * last build render on demand on first request instead of 404ing until CI runs
- * again. Unknown slugs still resolve to `notFound()`; because Next renders that
- * on demand it answers 200 with the not-found page, so `generateMetadata`
- * marks the response `noindex` to keep it out of search results.
+ * again.
+ *
+ * An unknown slug answers HTTP 200 with the not-found page, which is measured
+ * behaviour and not a bug to be corrected by editing this file. The status is
+ * not chosen by `notFound()`: this segment declares a `loading.tsx`, so Next
+ * flushes the streamed shell - and its 200 header - before the page body
+ * resolves and calls `notFound()`. `notFound()` only sets a 404 status when
+ * nothing has been flushed yet; removing `loading.tsx` restores the 404, and
+ * `category/[slug]`, which has no `loading.tsx`, does return 404.
+ *
+ * Because the status can be 200, `generateMetadata` marks the response
+ * `noindex, nofollow` so the not-found page cannot be indexed.
  */
 export const dynamicParams = true;
 export const revalidate = 60;
