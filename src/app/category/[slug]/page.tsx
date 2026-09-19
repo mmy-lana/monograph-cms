@@ -10,8 +10,14 @@ interface PageProps {
 
 const CATEGORY_FEED_LIMIT = 50;
 
-/** Only categories backed by published posts are routable. */
-export const dynamicParams = false;
+/**
+ * Known categories are prerendered and revalidated on the same 60 second window
+ * as the article routes. `dynamicParams = true` allows a category created in the
+ * CMS after the last build to render on demand rather than 404ing until CI runs,
+ * and `generateMetadata` marks unknown categories `noindex` because Next renders
+ * the not-found page for them on demand with a 200 status.
+ */
+export const dynamicParams = true;
 export const revalidate = 60;
 
 export async function generateStaticParams() {
@@ -24,9 +30,16 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const posts = await getPostsByCategorySlug(slug, { offset: 0, limit: CATEGORY_FEED_LIMIT });
   const category = posts[0]?.categories.find(c => c.slug === slug);
 
+  if (!category) {
+    return {
+      title: 'Category Not Found — Monograph',
+      robots: { index: false, follow: false }
+    };
+  }
+
   return {
-    title: category ? `${category.title} — Monograph` : 'Category Not Found — Monograph',
-    description: category?.description
+    title: `${category.title} — Monograph`,
+    description: category.description
   };
 }
 

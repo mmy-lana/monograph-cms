@@ -2,7 +2,22 @@
 
 import { useState, useEffect, useCallback, RefObject } from 'react';
 import { HighlightSelection } from '@/types/blog';
+import { relativeSelectionAnchor } from '@/lib/utils';
 
+/** Ignore accidental double-clicks and stray caret drags. */
+const MIN_SELECTION_LENGTH = 5;
+
+/**
+ * Tracks a text selection inside `containerRef` and reports its anchor point in
+ * the container's own coordinate frame.
+ *
+ * The popover is an absolutely-positioned child of the article container, so it
+ * is positioned against that element, not the document. Mixing in
+ * `window.scrollX/scrollY` (a global frame) pushed the popover off screen on
+ * every scrolled page; subtracting the container's rect keeps it pinned to the
+ * selection at any scroll offset, and it stays correct while scrolling because
+ * both the container and the popover move together.
+ */
 export function useTextSelection<T extends HTMLElement>(containerRef: RefObject<T | null>) {
   const [selection, setSelection] = useState<HighlightSelection | null>(null);
 
@@ -14,7 +29,7 @@ export function useTextSelection<T extends HTMLElement>(containerRef: RefObject<
     }
 
     const text = activeSelection.toString().trim();
-    if (text.length < 5) {
+    if (text.length < MIN_SELECTION_LENGTH) {
       setSelection(null);
       return;
     }
@@ -37,11 +52,17 @@ export function useTextSelection<T extends HTMLElement>(containerRef: RefObject<
       return;
     }
 
+    const containerRect = container.getBoundingClientRect();
+    const anchor = relativeSelectionAnchor(
+      { top: rect.top, left: rect.left, width: rect.width },
+      { top: containerRect.top, left: containerRect.left }
+    );
+
     setSelection({
       text,
       rect: {
-        top: rect.top + window.scrollY,
-        left: rect.left + rect.width / 2 + window.scrollX,
+        top: anchor.top,
+        left: anchor.left,
         width: rect.width
       }
     });

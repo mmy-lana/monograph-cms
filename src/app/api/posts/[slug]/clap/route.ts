@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sanityClient, isSanityConfigured } from '@/lib/sanity.client';
+import { sanityClient, isSanityWriteConfigured } from '@/lib/sanity.client';
 import { MOCK_POSTS } from '@/lib/mock-data';
 
 interface RouteContext {
@@ -19,6 +19,15 @@ interface ClapRequestBody {
   count?: unknown;
 }
 
+/** In-memory persistence used when Sanity writes are unavailable or fail. */
+function persistToMockDataset(slug: string, count: number): number | null {
+  const targetPost = MOCK_POSTS.find(p => p.slug === slug && p.status === 'published');
+  if (!targetPost) return null;
+
+  targetPost.clapsCount += count;
+  return targetPost.clapsCount;
+}
+
 export async function POST(req: NextRequest, context: RouteContext) {
   try {
     const { slug } = await context.params;
@@ -30,30 +39,37 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Invalid clap increment payload' }, { status: 400 });
     }
 
-    if (isSanityConfigured && sanityClient) {
-      // Concurrency-safe atomic mutation on the published document only.
-      const patchResult = await sanityClient
-        .patch({ query: PUBLISHED_POST_BY_SLUG, params: { slug } })
-        .inc({ clapsCount: count })
-        .commit({ autoGenerateArrayKeys: true });
+    // A write needs both a configured project and a write token. Without the
+    // token the remote commit fails with a 401, so read the write flag instead
+    // of the read flag and fall through to local persistence.
+    if (isSanityWriteConfigured && sanityClient) {
+      try {
+        // Concurrency-safe atomic mutation on the published document only.
+        const patchResult = await sanityClient
+          .patch({ query: PUBLISHED_POST_BY_SLUG, params: { slug } })
+          .inc({ clapsCount: count })
+          .commit({ autoGenerateArrayKeys: true });
 
-      if (!patchResult) {
-        return NextResponse.json({ error: 'Post not found' }, { status: 404 });
+        if (patchResult) {
+          return NextResponse.json({ success: true, totalClaps: patchResult.clapsCount });
+        }
+      } catch (error) {
+        console.error('[api/clap] remote mutation failed, falling back to local state', {
+          slug,
+          error
+        });
       }
-
-      return NextResponse.json({ success: true, totalClaps: patchResult.clapsCount });
     }
 
-    // In-memory increment for the mock dataset fallback.
-    const targetPost = MOCK_POSTS.find(p => p.slug === slug && p.status === 'published');
-    if (!targetPost) {
+    const totalClaps = persistToMockDataset(slug, count);
+    if (totalClaps === null) {
       return NextResponse.json({ error: 'Post not found' }, { status: 404 });
     }
 
-    targetPost.clapsCount += count;
-    return NextResponse.json({ success: true, totalClaps: targetPost.clapsCount });
-  } catch (err: unknown) {
-    const errorMessage = err instanceof Error ? err.message : 'Internal Server Error';
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    return NextResponse.json({ success: true, totalClaps });
+  } catch (error) {
+    // Never surface internal failure detail to the client (CWE-209).
+    console.error('[api/clap] unhandled failure', { error });
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

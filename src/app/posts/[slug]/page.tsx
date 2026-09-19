@@ -16,12 +16,14 @@ interface PageProps {
 }
 
 /**
- * Only slugs returned here are routable, so an unpublished draft or an
- * unknown slug resolves to a genuine 404 instead of a cached soft-404 shell.
- * Revalidation refreshes the list so newly published stories appear without a
- * full rebuild.
+ * Prerendered slugs are served from the cache and refreshed every 60 seconds,
+ * while `dynamicParams = true` lets an article published in the CMS after the
+ * last build render on demand on first request instead of 404ing until CI runs
+ * again. Unknown slugs still resolve to `notFound()`; because Next renders that
+ * on demand it answers 200 with the not-found page, so `generateMetadata`
+ * marks the response `noindex` to keep it out of search results.
  */
-export const dynamicParams = false;
+export const dynamicParams = true;
 export const revalidate = 60;
 
 export async function generateStaticParams() {
@@ -32,7 +34,12 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
   const post = await getPostBySlug(slug);
-  if (!post) return { title: 'Post Not Found — Monograph' };
+  if (!post) {
+    return {
+      title: 'Post Not Found — Monograph',
+      robots: { index: false, follow: false }
+    };
+  }
 
   return {
     title: `${post.title} — Monograph`,
@@ -159,7 +166,9 @@ export default async function PostDetailPage({ params }: PageProps) {
         </aside>
       </div>
 
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-paper/95 backdrop-blur-md border-t border-editorial-border px-6 py-2 flex items-center justify-between shadow-lg">
+      {/* Mobile action dock. The bottom padding reserves the iOS home-indicator
+          inset so the controls are never covered by the system gesture area. */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-paper/95 backdrop-blur-md border-t border-editorial-border px-6 pt-2 pb-[max(0.75rem,env(safe-area-inset-bottom))] flex items-center justify-between shadow-lg">
         <ClapperButton postSlug={post.slug} initialClaps={post.clapsCount} />
         <div className="flex items-center gap-2">
           <BookmarkButton item={bookmarkPayload} />

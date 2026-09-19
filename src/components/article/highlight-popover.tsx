@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Copy, Check, TriangleAlert } from 'lucide-react';
 import { HighlightSelection } from '@/types/blog';
-import { cn } from '@/lib/utils';
+import { cn, clampPopoverLeft } from '@/lib/utils';
 
 interface XBrandIconProps {
   className?: string;
@@ -22,11 +22,14 @@ interface HighlightPopoverProps {
   selection: HighlightSelection | null;
   onClear: () => void;
   articleTitle: string;
+  /** Measured width of the positioning container, in CSS pixels. */
+  containerWidth: number;
 }
 
 const POPOVER_WIDTH = 130;
 const POPOVER_HALF_WIDTH = POPOVER_WIDTH / 2;
-const VIEWPORT_PADDING = 16;
+/** Minimum gap kept between the popover and the edge of the article column. */
+const EDGE_PADDING = 8;
 const POPOVER_HEIGHT = 48;
 const POPOVER_OFFSET = 54;
 const RESET_DELAY_MS = 1600;
@@ -39,24 +42,14 @@ const COPY_STATUS_TEXT: Record<CopyState, string> = {
   failed: 'Copy blocked by the browser. Select the text and copy manually.'
 };
 
-export function HighlightPopover({ selection, onClear, articleTitle }: HighlightPopoverProps) {
+export function HighlightPopover({
+  selection,
+  onClear,
+  articleTitle,
+  containerWidth
+}: HighlightPopoverProps) {
   const [copyState, setCopyState] = useState<CopyState>('idle');
-  const [clampedLeft, setClampedLeft] = useState<number>(0);
   const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!selection) return;
-
-    const windowWidth = window.innerWidth;
-    const targetLeft = selection.rect.left;
-
-    // Viewport boundary math for 360px - 430px mobile screens
-    const minX = POPOVER_HALF_WIDTH + VIEWPORT_PADDING;
-    const maxX = windowWidth - POPOVER_HALF_WIDTH - VIEWPORT_PADDING;
-    const boundedX = Math.max(minX, Math.min(targetLeft, maxX));
-
-    setClampedLeft(boundedX);
-  }, [selection]);
 
   // A new selection always starts from a clean confirmation state.
   useEffect(() => {
@@ -89,6 +82,19 @@ export function HighlightPopover({ selection, onClear, articleTitle }: Highlight
   }, [selection, onClear]);
 
   if (!selection) return null;
+
+  /**
+   * `selection.rect.left` is already relative to the article container, so the
+   * clamp uses the container width measured by the shell. Clamping against the
+   * viewport (the previous behaviour) placed the pill outside the column on
+   * desktop and off screen on mobile.
+   */
+  const clampedLeft = clampPopoverLeft({
+    targetLeft: selection.rect.left,
+    containerWidth,
+    halfWidth: POPOVER_HALF_WIDTH,
+    padding: EDGE_PADDING
+  });
 
   const tweetText = `"${selection.text.slice(0, 180)}..." — via ${articleTitle}`;
   const shareUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(tweetText)}&url=${encodeURIComponent(
@@ -135,7 +141,9 @@ export function HighlightPopover({ selection, onClear, articleTitle }: Highlight
         {COPY_STATUS_TEXT[copyState]}
       </span>
 
-      {/* Downward triangle indicator using arbitrary border syntax */}
+      {/* Downward triangle indicator using arbitrary border syntax. It tracks the
+          unclamped selection centre so the caret still points at the text when
+          the pill itself has been pushed inward. */}
       <div
         aria-hidden="true"
         className="absolute top-full border-solid border-t-neutral-900 border-t-[6px] border-x-transparent border-x-[6px] border-b-0"

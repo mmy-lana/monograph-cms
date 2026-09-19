@@ -6,7 +6,7 @@ import {
 } from '@portabletext/react';
 import Image from 'next/image';
 import type { CalloutNode, CodeNode, CustomPortableTextBlock, ImageNode } from '@/types/blog';
-import { getBlockPlainText, slugify } from '@/lib/utils';
+import { headingAnchorId, isValidHref } from '@/lib/utils';
 
 interface PortableTextRendererProps {
   value: CustomPortableTextBlock[];
@@ -32,8 +32,8 @@ const components: PortableTextComponents = {
         {children}
       </p>
     ),
-    h2: ({ children, value }) => {
-      const id = slugify(getBlockPlainText(value));
+    h2: ({ children, value, index }) => {
+      const id = headingAnchorId(value, index + 1);
       return (
         <h2
           id={id}
@@ -43,8 +43,8 @@ const components: PortableTextComponents = {
         </h2>
       );
     },
-    h3: ({ children, value }) => {
-      const id = slugify(getBlockPlainText(value));
+    h3: ({ children, value, index }) => {
+      const id = headingAnchorId(value, index + 1);
       return (
         <h3
           id={id}
@@ -62,16 +62,23 @@ const components: PortableTextComponents = {
   },
   marks: {
     link: ({ children, value }: PortableTextMarkComponentProps<LinkMark>) => {
-      const href = typeof value?.href === 'string' && value.href.length > 0 ? value.href : null;
-      const isExternal = href !== null && href.startsWith('http');
+      const rawHref = typeof value?.href === 'string' ? value.href.trim() : '';
 
-      if (href === null) {
-        return <span className="underline decoration-dotted underline-offset-4">{children}</span>;
+      // Editorial content is untrusted input. An unvalidated href would let a
+      // stored "javascript:" or "data:" target execute in the reader's session
+      // (stored XSS), so anything outside the scheme allowlist degrades to
+      // plain, non-clickable text.
+      if (!isValidHref(rawHref)) {
+        return (
+          <span className="underline decoration-dotted underline-offset-4">{children}</span>
+        );
       }
+
+      const isExternal = /^https?:\/\//i.test(rawHref);
 
       return (
         <a
-          href={href}
+          href={rawHref}
           target={isExternal ? '_blank' : undefined}
           rel={isExternal ? 'noopener noreferrer' : undefined}
           className="underline decoration-neutral-400 underline-offset-4 hover:decoration-black transition-colors"

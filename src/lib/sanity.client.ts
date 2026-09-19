@@ -18,3 +18,12 @@ export const sanityClient = isSanityConfigured
       token: sanityToken || undefined
     })
   : null;
+
+/**
+ * Writes require a token. Without this guard an unauthenticated deployment would
+ * still attempt `patch().commit()`, which Sanity rejects with a 401 and the
+ * mutation endpoint returns a 500 instead of persisting locally.
+ */
+export const isSanityWriteConfigured = Boolean(
+  isSanityConfigured && sanityToken && sanityToken.trim() !== ''
+);

@@ -113,6 +113,14 @@ export interface BookmarkItem extends BookmarkableItem {
 
 export interface HighlightSelection {
   text: string;
+  /**
+   * Anchor point in the coordinate frame of the article container the popover is
+   * absolutely positioned inside (NOT viewport or document coordinates):
+   * `top` is the viewport-relative top offset by the container's own top, and
+   * `left` is the horizontal centre of the selection offset by the container's
+   * left. Both stay valid while the page scrolls because the container and the
+   * popover move together.
+   */
   rect: {
     top: number;
     left: number;
