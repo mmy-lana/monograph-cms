@@ -21,7 +21,8 @@ To eliminate `ERESOLVE` engine conflicts between React 19 and Sanity client tool
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@portabletext/react": "^8.0.1",
@@ -46,11 +47,30 @@ To eliminate `ERESOLVE` engine conflicts between React 19 and Sanity client tool
     "typescript": "^7.0.2"
   },
   "overrides": {
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
   }
 }
 ```
+
+Every entry above is a published stable release resolved from the public npm
+registry, and `pnpm-lock.yaml` pins the exact resolved build of each. The
+manifest deliberately carries no unreleased, prerelease or hypothetical
+versions: no `-rc`, `-canary`, `-alpha` or `-beta` specifier appears in
+`dependencies` or `devDependencies`, and no dependency is declared ahead of the
+date it first appeared on the registry.
+
+`overrides` declares the React peer floor (`^19.0.0`) rather than the resolved
+version (`^19.3.0`). `overrides` is a constraint applied to the whole dependency
+graph, so pinning it to the exact resolved version would make a patch upgrade of
+React a manifest edit; the floor keeps every transitive peer on React 19 while
+allowing the resolver to move within the major.
+
+`next lint` is intentionally absent: Next.js 16 removed the built-in `next lint`
+command, so the `lint` script delegates to `tsc --noEmit`, which is the same
+static check `typecheck` runs. `plan.md` and `package.json` must always carry
+identical script and version blocks; when they drift, this section is the copy
+that is wrong.
 
 ### 1.2 Core Architectural Invariants
 1. **Zero-Lock-in Dual Data Engine with Pagination:** Primary data ingestion uses Sanity CMS GROQ queries with slice-based pagination (`[offset...offset + limit]`) and status filtering (`status == "published" && !(_id in path("drafts.**"))`). If `NEXT_PUBLIC_SANITY_PROJECT_ID` is unset, the system transparently falls back to an embedded production mock dataset with identical slicing.
