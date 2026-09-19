@@ -1,0 +1,33 @@
+@import "tailwindcss";
+
+@theme {
+  --font-serif: var(--font-newsreader), "Charter", "Georgia", "Times New Roman", serif;
+  --font-sans: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), "Fira Code", monospace;
+
+  --color-paper: #FCFCFC;
+  --color-paper-subtle: #F6F6F5;
+  --color-ink-primary: #191919;
+  --color-ink-secondary: #5F5F5F;
+  --color-ink-tertiary: #8C8C8C;
+  --color-editorial-border: #E8E8E6;
+  --color-editorial-green: #1A8917;
+  --color-editorial-green-hover: #156F12;
+  --color-editorial-accent: #242424;
+}
+
+@layer base {
+  html {
+    color: var(--color-ink-primary);
+    background-color: var(--color-paper);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  ::selection {
+    background-color: #BBE3BA;
+    color: #111111;
+  }
+}
