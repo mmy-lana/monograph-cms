@@ -14,6 +14,36 @@
   --color-editorial-green: #1A8917;
   --color-editorial-green-hover: #156F12;
   --color-editorial-accent: #242424;
+
+  /* Entrance for the highlight-to-quote popover. The keyframes restate the
+     popover's own translateX(-50%) centering so the animation never fights the
+     inline transform that positions it. */
+  --animate-quote-popover: quote-popover-in 150ms ease-out;
+
+  /* Confirmation badge that lifts off the clap button for each applause batch. */
+  --animate-clap-rise: clap-rise 600ms ease-out forwards;
+
+  @keyframes quote-popover-in {
+    from {
+      opacity: 0;
+      transform: translateX(-50%) scale(0.94);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(-50%) scale(1);
+    }
+  }
+
+  @keyframes clap-rise {
+    from {
+      opacity: 1;
+      transform: translateY(0);
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-14px);
+    }
+  }
 }
 
 @layer base {

@@ -1,23 +1,32 @@
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import type { Metadata } from 'next';
-import { getPostBySlug, getAllPosts } from '@/lib/sanity.queries';
+import { getPostBySlug, getAllPostSlugs } from '@/lib/sanity.queries';
 import { Avatar } from '@/components/ui/avatar';
 import { ClapperButton } from '@/components/article/clapper-button';
 import { BookmarkButton } from '@/components/article/bookmark-button';
 import { PortableTextRenderer } from '@/components/article/portable-text-renderer';
 import { TableOfContents } from '@/components/article/table-of-contents';
 import { ArticleInteractiveShell } from './interactive-shell';
-import { formatDate } from '@/lib/utils';
-import { TableOfContentsItem, BookmarkableItem } from '@/types/blog';
+import { formatDate, getPostHeadings } from '@/lib/utils';
+import { BookmarkableItem } from '@/types/blog';
 
 interface PageProps {
   params: Promise<{ slug: string }>;
 }
 
+/**
+ * Only slugs returned here are routable, so an unpublished draft or an
+ * unknown slug resolves to a genuine 404 instead of a cached soft-404 shell.
+ * Revalidation refreshes the list so newly published stories appear without a
+ * full rebuild.
+ */
+export const dynamicParams = false;
+export const revalidate = 60;
+
 export async function generateStaticParams() {
-  const posts = await getAllPosts({ offset: 0, limit: 100 });
-  return posts.map(p => ({ slug: p.slug }));
+  const slugs = await getAllPostSlugs();
+  return slugs.map(slug => ({ slug }));
 }
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
@@ -58,17 +67,7 @@ export default async function PostDetailPage({ params }: PageProps) {
     estimatedReadingTime: post.estimatedReadingTime
   };
 
-  const headings: TableOfContentsItem[] = post.body
-    .filter(b => b._type === 'block' && (b.style === 'h2' || b.style === 'h3'))
-    .map(b => {
-      const text = (b.children || []).map((c: any) => c.text || '').join('');
-      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-      return {
-        id,
-        text,
-        level: b.style === 'h2' ? 2 : 3
-      };
-    });
+  const headings = getPostHeadings(post.body);
 
   return (
     <article className="min-h-screen pb-24">

@@ -1,11 +1,29 @@
-import { PortableText, PortableTextComponents } from '@portabletext/react';
-import type { PortableTextBlock } from '@portabletext/types';
+import {
+  PortableText,
+  type PortableTextComponents,
+  type PortableTextMarkComponentProps,
+  type PortableTextTypeComponentProps
+} from '@portabletext/react';
 import Image from 'next/image';
-import { CustomPortableTextBlock } from '@/types/blog';
+import type { CalloutNode, CodeNode, CustomPortableTextBlock, ImageNode } from '@/types/blog';
+import { getBlockPlainText, slugify } from '@/lib/utils';
 
 interface PortableTextRendererProps {
   value: CustomPortableTextBlock[];
 }
+
+/** Link annotation carried on `markDefs` entries, as emitted by the editorial schema. */
+type LinkMark = {
+  _type: 'link';
+  _key?: string;
+  href?: string;
+};
+
+const CALLOUT_TONES: Record<'info' | 'warning' | 'tip', { accent: string; label: string }> = {
+  info: { accent: 'border-neutral-900 bg-neutral-50', label: 'Note' },
+  warning: { accent: 'border-amber-500 bg-amber-50', label: 'Caution' },
+  tip: { accent: 'border-editorial-green bg-neutral-50', label: 'Takeaway' }
+};
 
 const components: PortableTextComponents = {
   block: {
@@ -15,8 +33,7 @@ const components: PortableTextComponents = {
       </p>
     ),
     h2: ({ children, value }) => {
-      const text = (value.children || []).map((c: any) => c.text || '').join('');
-      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const id = slugify(getBlockPlainText(value));
       return (
         <h2
           id={id}
@@ -27,8 +44,7 @@ const components: PortableTextComponents = {
       );
     },
     h3: ({ children, value }) => {
-      const text = (value.children || []).map((c: any) => c.text || '').join('');
-      const id = text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+      const id = slugify(getBlockPlainText(value));
       return (
         <h3
           id={id}
@@ -45,11 +61,17 @@ const components: PortableTextComponents = {
     )
   },
   marks: {
-    link: ({ children, value }) => {
-      const isExternal = (value?.href || '').startsWith('http');
+    link: ({ children, value }: PortableTextMarkComponentProps<LinkMark>) => {
+      const href = typeof value?.href === 'string' && value.href.length > 0 ? value.href : null;
+      const isExternal = href !== null && href.startsWith('http');
+
+      if (href === null) {
+        return <span className="underline decoration-dotted underline-offset-4">{children}</span>;
+      }
+
       return (
         <a
-          href={value?.href}
+          href={href}
           target={isExternal ? '_blank' : undefined}
           rel={isExternal ? 'noopener noreferrer' : undefined}
           className="underline decoration-neutral-400 underline-offset-4 hover:decoration-black transition-colors"
@@ -67,37 +89,69 @@ const components: PortableTextComponents = {
     )
   },
   types: {
-    callout: ({ value }: { value: { text?: string; tone?: string } }) => (
-      <aside className="my-8 p-5 bg-neutral-50 rounded-xs border-l-4 border-editorial-green text-neutral-800 font-sans text-sm sm:text-base leading-relaxed">
-        {value.text}
-      </aside>
-    ),
-    code: ({ value }: { value: { code?: string; filename?: string; language?: string } }) => (
-      <div className="my-8 rounded-xs overflow-hidden bg-neutral-900 text-neutral-100 font-mono text-xs sm:text-sm">
-        {value.filename && (
-          <div className="px-4 py-2 border-b border-neutral-800 text-neutral-400 text-xs bg-neutral-950 flex justify-between items-center">
-            <span>{value.filename}</span>
-            <span className="uppercase">{value.language}</span>
-          </div>
-        )}
-        <pre className="p-4 overflow-x-auto leading-relaxed">
-          <code>{value.code}</code>
-        </pre>
-      </div>
-    ),
-    image: ({ value }: { value: { asset?: { url?: string }; alt?: string; caption?: string } }) => {
-      const imageUrl = value?.asset?.url || 'https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1200&q=80';
+    callout: ({ value }: PortableTextTypeComponentProps<CalloutNode>) => {
+      const tone = value.tone ?? 'info';
+      const { accent, label } = CALLOUT_TONES[tone];
+
+      return (
+        <aside
+          className={`my-8 p-5 rounded-xs border-l-4 text-neutral-800 font-sans text-sm sm:text-base leading-relaxed ${accent}`}
+        >
+          <p className="font-sans text-[11px] font-semibold uppercase tracking-wider text-neutral-500 mb-1.5">
+            {label}
+          </p>
+          {value.text ? (
+            <p>{value.text}</p>
+          ) : (
+            <p className="text-neutral-500 italic">This note is empty.</p>
+          )}
+        </aside>
+      );
+    },
+    code: ({ value }: PortableTextTypeComponentProps<CodeNode>) => {
+      const code = typeof value.code === 'string' ? value.code : '';
+      const language = typeof value.language === 'string' ? value.language : '';
+
+      return (
+        <figure className="my-8 rounded-xs overflow-hidden bg-neutral-900 text-neutral-100 font-mono text-xs sm:text-sm">
+          {value.filename && (
+            <figcaption className="px-4 py-2 border-b border-neutral-800 text-neutral-400 text-xs bg-neutral-950 flex justify-between items-center gap-4">
+              <span className="truncate">{value.filename}</span>
+              {language && <span className="uppercase shrink-0">{language}</span>}
+            </figcaption>
+          )}
+          {code ? (
+            <pre className="p-4 overflow-x-auto leading-relaxed">
+              <code>{code}</code>
+            </pre>
+          ) : (
+            <p className="p-4 text-neutral-400 italic">No code was supplied for this sample.</p>
+          )}
+        </figure>
+      );
+    },
+    image: ({ value }: PortableTextTypeComponentProps<ImageNode>) => {
+      const imageUrl = typeof value.asset?.url === 'string' ? value.asset.url : null;
+
       return (
         <figure className="my-10">
-          <div className="relative w-full aspect-16/10 rounded-xs overflow-hidden bg-neutral-100">
-            <Image
-              src={imageUrl}
-              alt={value.alt || 'Article image'}
-              fill
-              sizes="(max-width: 768px) 100vw, 720px"
-              className="object-cover"
-            />
-          </div>
+          {imageUrl ? (
+            <div className="relative w-full aspect-16/10 rounded-xs overflow-hidden bg-neutral-100">
+              <Image
+                src={imageUrl}
+                alt={value.alt || 'Article image'}
+                fill
+                sizes="(max-width: 768px) 100vw, 720px"
+                className="object-cover"
+              />
+            </div>
+          ) : (
+            <div className="w-full aspect-16/10 rounded-xs border border-dashed border-editorial-border bg-paper-subtle flex items-center justify-center px-6">
+              <p className="font-sans text-xs text-neutral-500 text-center">
+                This figure has no image asset attached.
+              </p>
+            </div>
+          )}
           {value.caption && (
             <figcaption className="text-center font-sans text-xs text-neutral-500 mt-2.5">
               {value.caption}
@@ -110,9 +164,20 @@ const components: PortableTextComponents = {
 };
 
 export function PortableTextRenderer({ value }: PortableTextRendererProps) {
+  if (value.length === 0) {
+    return (
+      <div className="max-w-[42.5rem] mx-auto py-16 text-center">
+        <p className="font-serif text-lg text-neutral-800 mb-1">This article has no body content yet.</p>
+        <p className="font-sans text-xs text-neutral-500">
+          The story body will appear here once the editorial draft is published.
+        </p>
+      </div>
+    );
+  }
+
   return (
     <div className="prose-editorial">
-      <PortableText value={value as unknown as PortableTextBlock[]} components={components} />
+      <PortableText value={value} components={components} />
     </div>
   );
 }

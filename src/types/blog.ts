@@ -1,6 +1,11 @@
 import type { PortableTextBlock as SanityPortableTextBlock } from '@portabletext/types';
 
-export type CustomPortableTextBlock = SanityPortableTextBlock & {
+/**
+ * Editorial fields layered on top of the Portable Text specification.
+ * Shared by every node type so consumers can read them without having to
+ * narrow to a specific variant first.
+ */
+export interface CustomNodeFields {
   language?: string;
   code?: string;
   filename?: string;
@@ -13,7 +18,35 @@ export type CustomPortableTextBlock = SanityPortableTextBlock & {
     _type?: string;
     url?: string;
   };
-};
+}
+
+/**
+ * A text node (paragraph, heading, quote, list item).
+ * Per the Portable Text spec `children` is always present on these nodes.
+ */
+export type CustomTextBlock = SanityPortableTextBlock & CustomNodeFields;
+
+/** An embedded object node: callout aside, code sample, or figure image. */
+export type CustomObjectBlock =
+  | ({ _type: 'callout' } & CustomNodeFields)
+  | ({ _type: 'code' } & CustomNodeFields)
+  | ({ _type: 'image' } & CustomNodeFields);
+
+/**
+ * Discriminated union of every node that can appear in a post body.
+ * Discriminating on `_type` narrows object nodes; text nodes keep the
+ * broader `"block" | (string & {})` discriminant from the spec.
+ */
+export type CustomPortableTextBlock = CustomTextBlock | CustomObjectBlock;
+
+/** Callout aside node, narrowed for the serializer's `types.callout` component. */
+export type CalloutNode = Extract<CustomPortableTextBlock, { _type: 'callout' }>;
+
+/** Code sample node, narrowed for the serializer's `types.code` component. */
+export type CodeNode = Extract<CustomPortableTextBlock, { _type: 'code' }>;
+
+/** Figure image node, narrowed for the serializer's `types.image` component. */
+export type ImageNode = Extract<CustomPortableTextBlock, { _type: 'image' }>;
 
 export interface Author {
   _id: string;

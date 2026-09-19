@@ -187,5 +187,56 @@ export const MOCK_POSTS: Post[] = [
         ]
       }
     ]
+  },
+  {
+    _id: 'post-3',
+    title: 'The Economics of Open Standards in Infrastructure Software',
+    slug: 'the-economics-of-open-standards',
+    subtitle: 'Draft working notes on licensing incentives, governance, and long-term maintenance of public protocols.',
+    status: 'draft',
+    coverImage: {
+      url: 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=1600&q=80',
+      alt: 'Close-up of a printed circuit board with gold traces',
+      caption: 'Draft fixture: excluded from all published feed queries and detail lookups.'
+    },
+    publishedAt: '2026-04-01T09:00:00Z',
+    author: {
+      _id: 'author-1',
+      name: 'Elena Rostova',
+      slug: 'elena-rostova',
+      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      bio: 'Principal Distributed Systems Engineer at HyperScale. Writing on consistency guarantees, rust runtimes, and distributed transactions.',
+      role: 'Staff Infrastructure Architect',
+      twitterHandle: 'erostova_eng',
+      followersCount: 14820
+    },
+    categories: [
+      {
+        _id: 'cat-3',
+        title: 'Economics & Policy',
+        slug: 'economics-and-policy',
+        description: 'Market structures, standards bodies, and incentive design for critical software ecosystems.',
+        color: '#7C3AED'
+      }
+    ],
+    tags: ['Standards', 'Licensing', 'Governance'],
+    estimatedReadingTime: 6,
+    wordCount: 1410,
+    clapsCount: 0,
+    viewsCount: 0,
+    body: [
+      {
+        _key: 'b30',
+        _type: 'block',
+        style: 'normal',
+        children: [
+          {
+            _key: 'c30',
+            _type: 'span',
+            text: 'Unpublished working draft used to validate status-based filtering in the mock data fallback path.'
+          }
+        ]
+      }
+    ]
   }
 ];

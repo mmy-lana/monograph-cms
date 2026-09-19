@@ -1,4 +1,5 @@
 import { CustomPortableTextBlock } from '@/types/blog';
+import { isTextBlock } from '@/lib/utils';
 
 export interface ReadingTimeResult {
   minutes: number;
@@ -11,7 +12,7 @@ export function calculateReadingTime(blocks: CustomPortableTextBlock[]): Reading
   let codeBlockWordCount = 0;
 
   for (const block of blocks) {
-    if (block._type === 'block' && block.children) {
+    if (isTextBlock(block)) {
       for (const child of block.children) {
         if (child.text) {
           const words = child.text.trim().split(/\s+/).filter(Boolean).length;

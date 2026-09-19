@@ -45,7 +45,10 @@ export function ClapperButton({ postSlug, initialClaps }: ClapperButtonProps) {
       </button>
 
       {isAnimating && (
-        <div className="absolute -top-10 left-2 animate-out fade-out slide-out-to-top-3 duration-500 pointer-events-none select-none">
+        <div
+          aria-hidden="true"
+          className="absolute -top-10 left-2 animate-clap-rise pointer-events-none select-none"
+        >
           <div className="bg-editorial-green text-white text-xs font-semibold px-2 py-0.5 rounded-full shadow-md">
             +{userClaps}
           </div>
