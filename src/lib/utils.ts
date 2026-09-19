@@ -233,3 +233,62 @@ export function clampPopoverLeft({
 
   return Math.min(Math.max(targetLeft, min), max);
 }
+
+interface ClampCaretOffsetOptions {
+  /**
+   * Horizontal distance, in CSS pixels, between the selection's centre and the
+   * popover's centre. Negative when the selection sits left of the popover.
+   */
+  rawOffset: number;
+  /** Width of the popover in CSS pixels. */
+  popoverWidth: number;
+  /** Minimum gap kept between the caret and the popover's rounded ends. */
+  padding?: number;
+}
+
+/**
+ * Clamps the popover caret's centre, expressed as a distance from the popover's
+ * own left edge.
+ *
+ * The caret is the triangle that points at the selected text. It is positioned
+ * from the popover's midpoint plus the raw offset between the selection centre
+ * and the popover centre, but `clampPopoverLeft` has usually already pushed the
+ * pill inward to keep it inside the article column. For a selection near either
+ * edge that residual offset is large enough to drag the caret outside the pill
+ * entirely - at the extreme it lands a full caret width past the end cap and the
+ * indicator detaches from its own popover.
+ *
+ * Clamping the offset to `[padding, popoverWidth - padding]` keeps the caret
+ * inside the rounded end caps, so it slides along the pill and stops at the end
+ * instead of escaping. The caret therefore stops tracking the selection at the
+ * extremes, which is the intended trade-off: an approximated pointer beats a
+ * detached one.
+ */
+export function clampCaretOffset({
+  rawOffset,
+  popoverWidth,
+  padding = 12
+}: ClampCaretOffsetOptions): number {
+  // An unmeasured popover has no meaningful bounds. This is checked before the
+  // bounds are derived, not after: `Infinity - padding` is `Infinity`, and
+  // `Math.min(Math.max(x, Infinity), Infinity)` would hand `Infinity` to the
+  // style attribute. Both non-finite inputs are rejected here so nothing but a
+  // finite number can reach the caller.
+  if (!Number.isFinite(popoverWidth)) return 0;
+
+  // The selection rect is unmeasured on the first paint. Returning the centre
+  // keeps the caret under the popover's midpoint rather than emitting NaN.
+  // `NaN` is the only value that falls back here: an infinite offset is a
+  // coherent "as far as possible" and is saturated by the clamp below.
+  if (Number.isNaN(rawOffset)) return popoverWidth / 2;
+
+  const min = padding;
+
+  // A popover narrower than twice the padding has no interior to keep the caret
+  // in; centring it is the only sane answer, and it avoids an inverted range
+  // that would make Math.min/Math.max return the wrong bound.
+  const max = popoverWidth - padding;
+  if (max < min) return popoverWidth / 2;
+
+  return Math.min(Math.max(popoverWidth / 2 + rawOffset, min), max);
+}

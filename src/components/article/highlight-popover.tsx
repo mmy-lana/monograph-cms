@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Copy, Check, TriangleAlert } from 'lucide-react';
 import { HighlightSelection } from '@/types/blog';
-import { cn, clampPopoverLeft } from '@/lib/utils';
+import { cn, clampPopoverLeft, clampCaretOffset } from '@/lib/utils';
 
 interface XBrandIconProps {
   className?: string;
@@ -30,6 +30,12 @@ const POPOVER_WIDTH = 130;
 const POPOVER_HALF_WIDTH = POPOVER_WIDTH / 2;
 /** Minimum gap kept between the popover and the edge of the article column. */
 const EDGE_PADDING = 8;
+/**
+ * Minimum gap kept between the caret and the popover's rounded end caps.
+ * Larger than `EDGE_PADDING` because the caret is 6px wide on each side of its
+ * centre, so 12px keeps it clear of the corner radius once the pill is clamped.
+ */
+const CARET_PADDING = 12;
 const POPOVER_HEIGHT = 48;
 const POPOVER_OFFSET = 54;
 const RESET_DELAY_MS = 1600;
@@ -141,14 +147,20 @@ export function HighlightPopover({
         {COPY_STATUS_TEXT[copyState]}
       </span>
 
-      {/* Downward triangle indicator using arbitrary border syntax. It tracks the
-          unclamped selection centre so the caret still points at the text when
-          the pill itself has been pushed inward. */}
+      {/* Downward triangle indicator using arbitrary border syntax. The offset
+          is clamped so the caret stays inside the pill's rounded end caps: the
+          raw selection-to-popover delta grows large once the pill has been
+          pushed inward at either edge, which previously dragged the caret
+          past the popover's own boundary. */}
       <div
         aria-hidden="true"
         className="absolute top-full border-solid border-t-neutral-900 border-t-[6px] border-x-transparent border-x-[6px] border-b-0"
         style={{
-          left: `calc(50% + ${selection.rect.left - clampedLeft}px)`,
+          left: `${clampCaretOffset({
+            rawOffset: selection.rect.left - clampedLeft,
+            popoverWidth: POPOVER_WIDTH,
+            padding: CARET_PADDING
+          })}px`,
           transform: 'translateX(-50%)'
         }}
       />
