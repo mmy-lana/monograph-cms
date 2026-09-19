@@ -1,7 +1,7 @@
 # Implementation Plan: Editorial Medium-Grade Blog Platform
 
 **Production Blueprint (`plan.md`)**  
-**Stack:** Next.js 15+ (App Router, React 19) • Tailwind CSS v4+ • Sanity CMS (Headless GROQ) • TypeScript 5.6+ (Strict Mode) • Node.js 22 LTS  
+**Stack:** Next.js 16+ (App Router, React 19.3) • Tailwind CSS v4.3+ • Sanity CMS (Headless GROQ) • TypeScript 7.0+ (Strict Mode) • Node.js 22 LTS  
 **Aesthetic:** Medium-grade editorial elegance, high-contrast serif body typography, dynamic scroll tracking, viewport-clamped highlight-to-quote popover, atomic multi-clap engine, and distraction-free reading experience.
 
 ---
@@ -16,6 +16,7 @@ To eliminate `ERESOLVE` engine conflicts between React 19 and Sanity client tool
   "name": "monograph-cms",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "pnpm@9.15.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -23,30 +24,30 @@ To eliminate `ERESOLVE` engine conflicts between React 19 and Sanity client tool
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "^15.1.0",
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0",
-    "next-sanity": "^9.8.38",
-    "@sanity/client": "^6.22.0",
-    "@sanity/image-url": "^1.1.0",
-    "@portabletext/react": "^3.2.0",
-    "@portabletext/types": "^2.0.13",
-    "lucide-react": "^0.468.0",
+    "@portabletext/react": "^8.0.1",
+    "@portabletext/types": "^4.0.2",
+    "@sanity/client": "^8.6.2",
+    "@sanity/image-url": "^2.1.1",
     "clsx": "^2.1.1",
-    "tailwind-merge": "^2.5.5"
+    "lucide-react": "^1.47.0",
+    "next": "^16.3.5",
+    "next-sanity": "^13.3.4",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "tailwind-merge": "^3.7.0"
   },
   "devDependencies": {
-    "typescript": "^5.6.3",
-    "@types/node": "^22.10.0",
-    "@types/react": "^19.0.0",
-    "@types/react-dom": "^19.0.0",
-    "tailwindcss": "^4.0.0",
-    "@tailwindcss/postcss": "^4.0.0",
-    "postcss": "^8.4.49"
+    "@tailwindcss/postcss": "^4.3.3",
+    "@types/node": "^26.6.2",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^7.0.2"
   },
   "overrides": {
-    "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
   }
 }
 ```
@@ -1509,7 +1510,7 @@ export function useClaps(postSlug: string, initialTotalClaps: number) {
 #### 5.1 Root Layout Font Wiring (Collision-Free)
 ```typescript
 // src/app/layout.tsx
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Newsreader, Inter, JetBrains_Mono } from 'next/font/google';
 import { MainNav } from '@/components/navigation/main-nav';
 import { ReadingProgressBar } from '@/components/ui/reading-progress-bar';
@@ -1534,10 +1535,15 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap'
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover'
+};
+
 export const metadata: Metadata = {
   title: 'Monograph — Editorial Platform for Thought Leadership',
-  description: 'Distraction-free reading experience crafted with typographic precision and distributed engineering architecture.',
-  viewport: 'width=device-width, initial-scale=1, viewport-fit=cover'
+  description: 'Distraction-free reading experience crafted with typographic precision and distributed engineering architecture.'
 };
 
 export default function RootLayout({
