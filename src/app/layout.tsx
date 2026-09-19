@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Newsreader, Inter, JetBrains_Mono } from 'next/font/google';
 import { MainNav } from '@/components/navigation/main-nav';
 import { Footer } from '@/components/navigation/footer';
@@ -24,10 +24,15 @@ const jetbrainsMono = JetBrains_Mono({
   display: 'swap'
 });
 
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  viewportFit: 'cover'
+};
+
 export const metadata: Metadata = {
   title: 'Monograph — Editorial Platform for Thought Leadership',
-  description: 'Distraction-free reading experience crafted with typographic precision and distributed engineering architecture.',
-  viewport: 'width=device-width, initial-scale=1, viewport-fit=cover'
+  description: 'Distraction-free reading experience crafted with typographic precision and distributed engineering architecture.'
 };
 
 export default function RootLayout({
