@@ -80,7 +80,7 @@ Every feature in Monograph adheres to Tier-1 enterprise reliability benchmarks:
 ### 1. Clone & Install
 
 ```bash
-git clone https://github.com/thesyalana/monograph-cms.git
+git clone https://github.com/mmy-lana/monograph-cms.git
 cd monograph-cms
 pnpm install
 ```
